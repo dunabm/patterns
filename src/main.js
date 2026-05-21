@@ -1,4 +1,3 @@
-import './style.css';
 import { exercises } from './exercises.js';
 import { applyPatternBackground } from './patterns.js';
 import { initHeroPatterns } from './hero-patterns.js';
