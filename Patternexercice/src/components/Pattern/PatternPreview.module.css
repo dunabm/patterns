@@ -1,0 +1,41 @@
+.preview {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+
+.container {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tile {
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+
+.tile:hover {
+  opacity: 0.8;
+}
+
+.tileSelected {
+  cursor: pointer;
+  outline: 2px solid #0078d7;
+}
