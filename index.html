@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Duna Blázquez — Abadir Workshop</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="custom-cursor"><svg viewBox="0 0 26 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2l18 18h-6l3 5-2 1-4-6-6 3z" fill="#ffffff" stroke="#000000" stroke-width="2" stroke-linejoin="round"/></svg></div>
+  <div id="app">
+    <header class="header">
+      <h1 class="header-title">Duna Blázquez</h1>
+      <nav class="header-nav">
+        <button class="nav-btn active" data-section="home">Inicio</button>
+        <button class="nav-btn" data-section="exercises">Ejercicios</button>
+      </nav>
+      <button class="hamburger" aria-label="Menú">☰</button>
+    </header>
+
+    <section class="hero" id="hero">
+      <svg id="hero-patterns"></svg>
+      <div class="hero-subtitle-wrapper">
+        <h2 class="hero-subtitle">Abadir workshop</h2>
+      </div>
+      <div class="hero-search">
+        <input type="text" class="search-input" placeholder="buscar ejercicio..." />
+      </div>
+    </section>
+
+    <main id="main-content">
+      <section id="grid-section" class="grid-section">
+        <div class="grid" id="exercise-grid">
+        </div>
+      </section>
+
+      <section id="viewer-section" class="viewer-section" style="display:none">
+        <button class="back-btn" id="back-btn">← volver</button>
+        <iframe id="exercise-iframe" class="exercise-iframe"></iframe>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Duna Blázquez — Abadir Workshop</p>
+    </footer>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

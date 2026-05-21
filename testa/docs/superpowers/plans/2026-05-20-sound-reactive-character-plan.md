@@ -1,0 +1,493 @@
+# Sound-Reactive Character Animation Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a single-page HTML website where a character illustration reacts to microphone input, morphing from a "silence" state to a "sound" state.
+
+**Architecture:** Vanilla HTML/CSS/JS. SVG inline contains both character states overlaid. CSS handles transforms, clip-paths, and transitions. Web Audio API drives a requestAnimationFrame loop that reads RMS amplitude and maps it to CSS custom properties controlling each body part.
+
+**Tech Stack:** HTML5, CSS3 (custom properties, clip-path, transforms), Web Audio API, SVG inline
+
+---
+
+## File Structure
+
+- `testa/index.html` — HTML page with inline SVG (both states), links to CSS/JS
+- `testa/style.css` — All styles: positioning, overlays, transitions, clip-paths, transforms
+- `testa/script.js` — Audio capture (getUserMedia → AnalyserNode → RMS), animation loop, DOM control
+
+### Task 1: HTML skeleton with embedded SVG
+
+**Files:**
+- Create: `testa/index.html`
+- Dependencies: `testa/style.css`, `testa/script.js`
+
+- [ ] **Step 1: Create index.html with SVG inline**
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testa Reactiva al Sonido</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="container">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580.57 218.29" id="character">
+      <defs>
+        <style>
+          .cls-1 { stroke: #95c11f; }
+          .cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10 { stroke-miterlimit: 10; }
+          .cls-1, .cls-8, .cls-10 { fill: none; }
+          .cls-2 { fill: #e6007e; }
+          .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10 { stroke: #000; }
+          .cls-3 { fill: #b2b2b2; }
+          .cls-11 { isolation: isolate; }
+          .cls-4, .cls-12 { fill: #9d9d9c; }
+          .cls-4, .cls-12, .cls-10 { mix-blend-mode: soft-light; opacity: .56; }
+          .cls-5, .cls-13 { fill: #fff; }
+          .cls-6 { fill: #ea5b0c; }
+          .cls-7 { fill: #95c11f; }
+        </style>
+      </defs>
+      <g class="cls-11">
+        <!-- BOCA SILENCIO -->
+        <g id="boca-silencio" class="part-silence">
+          <path class="cls-6" d="M164.58,174.4c-.79,11.64-9.17,20.8-21.12,25.53,0-1.06-.13-4.66-.31-5.86,5.26-2.36,9.7-2.93,12.79-7.11,2.79-3.76,4.51-8.13,4.83-12.88,1.11-16.21-14.33,1.42-34.65-.29-20.32-1.71-39.43-10.21-40.53,6.01-.56,8.32,4.42,4.99,11.49,10.26,4.14,3.08,7.04,2.33,10.55,3.9-.19,1.11-.24,5.01-.2,6.08-14.96-5.93-28.88-9.24-27.94-23.06,1.22-17.88,23.37-10.89,45.8-9,22.43,1.88,40.51-11.46,39.29,6.43Z"/>
+          <path class="cls-9" d="M160.76,173.68c-.32,4.75-2.05,9.12-4.83,12.88-2.93-5.34-14.93,2.58-23.98-.92-7.91-3.06-6.13-1.95-6.13-1.95-4.77-1.78-5.99,0-5.99,0-8.25-3.77-19.03-2.5-22.75,5.96-6.63-5.93-12.06-1.53-11.49-9.86,1.1-16.21,19.04-7.22,39.36-5.51,20.32,1.71,36.92-16.82,35.81-.61Z"/>
+          <path class="cls-2" d="M143.14,194.06c.18.76.28,1.47.29,2.14.06,3.65-2.28,6-5.81,7.45-3.94,1.63-9.37,2.14-14.56,2.08-3.79-.04-7.08-.81-9.67-2.08-3.65-1.79-5.87-4.55-5.98-7.63-.04-.68.04-1.37.23-2.07-3.99-1.1-7.57-2.54-10.58-4.24,3.72-5.34,4.1-6.63,7.35-9.17,0,0,6.49-6.98,20.52.59,0,0,6.77-6.01,14.69-4.08,9.06,2.21,13.36,7.33,16.29,10.7-3.09,2.64-7.5,4.81-12.76,6.3Z"/>
+          <path class="cls-8" d="M113.85,179.81s1.96-.95-4.2,10.72c-1.03,1.93-1.67,3.9-1.99,5.82"/>
+          <path class="cls-8" d="M136.05,181.91c.81,1.74,1.83,3.21,2.74,4.32,2.08,2.55,3.51,5.7,4.16,9.06.08.42.15.84.21,1.24"/>
+          <path class="cls-5" d="M127.84,174.66s.31,16.06,2.44,15.78l4.28-.56-.48-4.51,1.76,4.34s3.07.36,3.88-.51c.81-.87-1.07-10.05-1.07-10.05l-.54-1.36c-.79-2.02-2.36-3.28-4.02-3.25l-6.25.12Z"/>
+          <path class="cls-5" d="M113.3,172.9l-4.08,12.65,3.15,1.28,1.16-2.87.31,2.69s4.54,3.66,5.22.84,2.94-13.42,2.94-13.42c0,0-2.49-1.84-8.7-1.17Z"/>
+        </g>
+        <!-- BOCA SONIDO -->
+        <g id="boca-sonido" class="part-sound">
+          <path class="cls-6" d="M506.44,174.05c-.88,11.73-10.27,21.36-23.65,26.13-.01-1.07-.12-2.21-.32-3.42,5.89-2.38,10.83-5.84,14.29-10.05,3.12-3.79,5.05-8.19,5.41-12.98,1.24-16.34-16.21-30.97-38.96-32.69-22.75-1.72-42.2,10.13-43.43,26.47-.63,8.39,3.67,16.34,11.09,22.32,3.36,2.71,7.37,5.01,11.84,6.76-.21,1.12-.3,2.22-.26,3.3-16.75-5.98-27.99-18.78-26.94-32.71,1.37-18.02,22.82-31.1,47.93-29.2,25.11,1.89,44.36,18.04,43,36.07Z"/>
+          <path class="cls-9" d="M502.17,173.33c-.36,4.79-2.29,9.19-5.41,12.98-3.28-5.38-13.68-21.32-23.82-24.85-8.86-3.08-9.56,11.98-9.56,11.98-.22-11.11-6.89-11.56-6.89-11.56-9.24-3.8-21.45,19.02-25.62,27.55-7.42-5.98-11.72-13.93-11.09-22.32,1.23-16.34,20.68-28.19,43.43-26.47,22.75,1.72,40.2,16.35,38.96,32.69Z"/>
+          <path class="cls-2" d="M482.47,196.36c.2,1.21.31,2.35.32,3.42.07,5.82-2.55,9.57-6.51,11.89-4.41,2.6-10.49,3.41-16.3,3.32-4.24-.07-7.93-1.3-10.83-3.32-4.09-2.85-6.57-7.27-6.7-12.18-.04-1.08.05-2.18.26-3.3-4.47-1.75-8.48-4.05-11.84-6.76,4.17-8.53,16.38-31.35,25.62-27.55,0,0,6.67.45,6.89,11.56,0,0,.7-15.06,9.56-11.98,10.14,3.53,20.54,19.47,23.82,24.85-3.46,4.21-8.4,7.67-14.29,10.05Z"/>
+          <path class="cls-8" d="M449.83,168.99s2,9.56-4.89,21.33c-1.15,1.95-1.87,3.93-2.23,5.87"/>
+          <path class="cls-8" d="M476.05,168.99c-1.34,9.78,4,19.33,4,19.33,1.24,2.99,2.02,5.66,2.42,8.04"/>
+          <path class="cls-5" d="M462.57,141.19s-1.56,13.23.85,13.23h4.82v-3.76l1.44,3.76s3.37.63,4.38,0,0-8.38,0-8.38l-.43-1.17c-.64-1.74-2.24-2.95-4.09-3.11l-6.96-.57Z"/>
+          <path class="cls-5" d="M448.79,141.39l-2.38,12.66,3.69.65.79-2.92.8,2.48s5.63,2.65,5.9-.13.99-13.19.99-13.19c0,0-3.06-1.3-9.8.44Z"/>
+        </g>
+        <!-- BRAZO IZQ SILENCIO -->
+        <g id="brazo-izq-silencio" class="part-silence">
+          <path class="cls-13" d="M266.65,162.89l.26-.41c4.12-1.74,3.37-5.96,3.37-5.96-.07-.77-.18-1.46-.32-2.1l.13-.59c7.71-4.06,12.62,1.23,16.04.78,3.5-.47,7.65-4.54-1.77-12.54-7.92-6.72-23.07-.43-27.68,1.74.25.97.44,2.02.51,3.13l-.51-3.13c-.79-3.1-2.2-5.32-2.2-5.32,0,0-22.08,7.53-15.76,24.03,6.31,16.5,3.21,17.63,24.16,10.96,0,0,5.39-5.17,3.78-10.6Z"/>
+          <path class="cls-8" d="M260.48,169.36c-6.9,3.47-12.07-2.5-11.5-7.23.57-4.72,8.82-9.15,15.22-2.68,6.4,6.46-1.61,14.14-1.61,14.14-20.94,6.66-17.85,5.54-24.16-10.96-6.32-16.5,15.76-24.03,15.76-24.03,0,0,1.41,2.22,2.2,5.32"/>
+          <path class="cls-8" d="M256.7,150.24c-.46,2.39-1.71,4.79-4.32,6.84-1.14.89-2.06,1.4-2.8,1.6-5.2,1.41-1.82-11.89-1.82-11.89"/>
+          <path class="cls-8" d="M285.85,154.71c-3.45.45-8.42-4.96-16.26-.68-2.49-10.21-12.89-3.79-12.89-3.79.43-2.22.18-4.44-.31-6.33,4.61-2.17,19.76-8.46,27.68-1.74,9.42,7.99,5.28,12.07,1.77,12.54Z"/>
+          <path class="cls-1" d="M269.23,154.23c.12-.07.24-.14.36-.2"/>
+          <path class="cls-8" d="M269.59,154.04c.19.76.33,1.62.42,2.58,0,0,.81,4.47-3.7,6.11"/>
+          <path class="cls-7" d="M179.51,139.16s19.83,43.34,58.93,23.47l2.67,6.93s-20.57,13.36-37.34,2.69c-16.77-10.68-17.9-15.46-23.07-29.06l-1.19-4.03Z"/>
+        </g>
+        <!-- BRAZO DER SILENCIO -->
+        <g id="brazo-der-silencio" class="part-silence">
+          <path class="cls-7" d="M34.86,174.71c.8-8.54,6.55-44.03,46.51-39.28l.59-7.98s-24.75-5.77-38.41,11.25c-12.31,15.33-13.27,21.1-14.13,33.52-.16,2.34,1.51,4.34,3.62,4.32h0c.94,0,1.72-.79,1.82-1.83Z"/>
+          <path class="cls-13" d="M44.68,178.47c-4.66-14.49-12.39-20.59-12.39-20.59,0,0-1.42-.03-1.04-8.92.37-8.9,3.47-20.3-2.98-21.28-5.87-.89-7.91,2.08-8.61,4.57l-.45-.2c-5.17-7.8-8.48-2.32-9.47-.19-.61-.18-1.33-.22-2.18-.09-6.72,1.04-7.57,6.84-6.4,12.43,1.15,5.47,3.18,8.67,7.93,11.27l.03.93c-2.31.07-4.65,1.51-6.6,5.55-6.34,13.12,11.57,12.71,11.57,12.71,0,0,5.41,3.42,10.82,8.75,5.41,5.34,24.44,9.54,19.77-4.95Z"/>
+          <path class="cls-8" d="M24.5,151.23s-5.41-5.78-5.41-15.93c0,0-.75-9.1,8.95-7.62,6.45.98,3.36,12.39,2.98,21.28-.37,8.9,1.04,8.92,1.04,8.92,0,0,7.72,6.1,12.39,20.59,4.66,14.49-14.36,10.29-19.77,4.95s-10.82-8.75-10.82-8.75c0,0-17.91.41-11.57-12.71,6.34-13.12,16.79,1.1,16.79,1.1"/>
+          <path class="cls-8" d="M9.2,132.6s3.67-10.36,10.14,0"/>
+          <path class="cls-8" d="M20.21,153.32s-5.03-2.69-6.34-7.87.18-14.71-6.53-13.68c-6.72,1.04-7.57,6.84-6.4,12.43,1.17,5.59,3.27,8.83,8.26,11.46"/>
+        </g>
+        <!-- BRAZO IZQ SONIDO -->
+        <g id="brazo-izq-sonido" class="part-sound">
+          <g transform="translate(-307, 0)">
+            <path class="cls-13" d="M570.68,30.99l-.32-.43c-.24-5.23-4.82-5.79-4.82-5.79-.81-.18-1.55-.28-2.25-.34l-.55-.34c-1.28-10.06,5.91-13.84,6.73-17.85.82-4.11-1.79-10.15-13.4-2.17-9.76,6.71-8.97,25.91-8.47,31.84,1.08.04,2.22.18,3.37.47l-3.37-.47c-3.44-.14-6.22.71-6.22.71,0,0-.51,27.44,18.6,25.8,19.11-1.63,19.11,2.24,20.08-23.63,0,0-3.26-7.81-9.38-7.8Z"/>
+            <path class="cls-8" d="M574.98,40.11c.97,8.95-7.01,12.8-11.6,10.58s-6.04-13.01,2.9-18.08c8.94-5.08,13.78,6.52,13.78,6.52-.97,25.87-.97,22-20.08,23.63-19.11,1.64-18.6-25.8-18.6-25.8,0,0,2.78-.85,6.22-.71"/>
+            <path class="cls-8" d="M554.15,38.01c2.26,1.32,4.24,3.53,5.36,7.16.49,1.58.66,2.79.59,3.7-.49,6.34-12.76-1.9-12.76-1.9"/>
+            <path class="cls-8" d="M569.47,6.58c-.82,4.05-8.16,7.86-6.7,18.14-11.3-.59-8.62,13.29-8.62,13.29-2.1-1.23-4.45-1.68-6.55-1.76-.5-5.93-1.29-25.13,8.47-31.84,11.61-7.98,14.22-1.94,13.4,2.17Z"/>
+            <path class="cls-8" d="M562.77,24.72c.84.04,1.77.17,2.78.39,0,0,4.84.57,4.84,6.21"/>
+            <path class="cls-7" d="M518.87,115.23s46.85-1.69,41.11-52.46l8.04-.71s5.98,27.68-11.08,43.07-22.34,15.07-38.07,16.38v-6.28Z"/>
+          </g>
+        </g>
+        <!-- BRAZO DER SONIDO -->
+        <g id="brazo-der-sonido" class="part-sound">
+          <g transform="translate(-305, -88)">
+            <path class="cls-7" d="M339.18,123.82c7.57-4.2,40.57-19.43,62.29,19.97l6.97-4.07s-11.13-26.04-33.94-28.74c-20.56-2.43-25.94.02-36.75,6.41-2.04,1.2-2.62,3.89-1.25,5.82h0c.61.86,1.76,1.12,2.68.61Z"/>
+            <path class="cls-8" d="M344.05,110.73s-1.38-4.46-3.8-2.33-4.44,11.85-4.44,11.85c0,0-.52,8.97,5.56,4.94"/>
+            <path class="cls-13" d="M342.38,135c8.97-12.65,9.05-23.26,9.05-23.26,0,0-.89-1.31,6.7-6.11,7.59-4.8,18.99-8.55,15.66-15.04-3.03-5.9-6.8-6.05-9.3-5.26l-.13-.52c3.12-9.24-3.53-9.12-5.92-8.8-.24-.66-.67-1.34-1.33-2.05-5.17-5.56-10.51-2.99-14.37,1.32-3.78,4.21-5.12,7.93-4.22,13.79l-.75.57c-1.54-2.08-4.23-3.39-8.82-2.85-14.91,1.76-3.07,17.95-3.07,17.95,0,0,.65,6.93-.28,14.98-.94,8.05,7.81,27.93,16.78,15.28Z"/>
+            <path class="cls-8" d="M351.92,100.74s1.3-8.3,9.68-14.17c0,0,7.03-5.94,12.04,3.81,3.33,6.49-8.07,10.24-15.66,15.04-7.59,4.8-6.7,6.11-6.7,6.11,0,0-.08,10.61-9.05,23.26-8.97,12.65-17.71-7.23-16.78-15.28s.28-14.98.28-14.98c0,0-11.84-16.19,3.07-17.95,14.91-1.76,9.87,16.04,9.87,16.04"/>
+            <path class="cls-8" d="M357.49,75.95s10.91-2.62,6.51,9.3"/>
+            <path class="cls-8" d="M347.44,98.02s-1.01-6.17,2.43-10.37,12.27-8.33,7.1-13.89-10.51-2.99-14.37,1.32-5.19,8.1-4.16,14.2"/>
+          </g>
+        </g>
+        <!-- CABEZA SILENCIO -->
+        <g id="cabeza-silencio" class="part-silence">
+          <path class="cls-8" d="M200.41,196.42l-44.43-102.21c-1.62-4.57-5.72-7.46-10.13-7.1l-41.81,3.34c-4.14.34-7.67,3.44-8.91,7.83l-34.76,98.86c-2.04,7.22,2.81,14.57,9.63,14.57h43.42c3.37,0,5.98-.07,9.77,0,5.19.09,10.39-.25,14.46,0h53.37c7.11,0,11.99-7.94,9.4-15.29Z"/>
+          <g>
+            <path class="cls-2" d="M118.31,67.15s-.32-9.83.97-11.02,3.76-3.08,6.94-1.72,1.87,7.44,1.87,7.44c0,0,.45,8.58,1.04,11.16s1.62,6.13,3.71,6.21-14.3,1.94-14.3,1.94l3.44-3.72-.61-10.81-3.07.53"/>
+            <path class="cls-8" d="M121.38,66.62c-1.08.18-2.12.36-3.07.53-.02-.16-.21-1.91-.17-4.15.04-2.17.29-4.79,1.13-6.84,0,0,0,0,.02-.03.04-.06.17-.22.38-.44h0c.55.09,1.02,3.16,1.38,6.97.12,1.26.23,2.61.32,3.96Z"/>
+            <path class="cls-8" d="M119.28,56.13c.13-.32.26-.46.38-.44"/>
+            <path class="cls-8" d="M118.31,67.16h0"/>
+            <path class="cls-3" d="M139.47,78.21l-5.57.64s-2.56,1.95-4.16-3.27c-.32-1.08-.62-2.45-.83-4.21-.27-2.18-.46-4.05-.58-5.64.04,0,.1,0,.14,0,.55-.06,2.65-.23,4.58-.09.08,0,.16,0,.24.02.09,0,.17,0,.25.02,1.25.14,2.37.44,2.85,1.01.05.06.1.13.13.2.04.07.07.15.09.23.06.25.13.52.2.78.05.22.12.45.18.68,0,.05.02.1.04.16.05.21.11.41.16.63.04.13.07.27.11.42.11.45.22.89.35,1.35.45,1.7.92,3.56,1.29,4.95t0,.02c.09.34.17.65.24.93,0,.02,0,.04.02.06.03.1.04.19.07.28.13.53.21.83.21.83Z"/>
+            <path class="cls-9" d="M206.49,202.49l-48.71-114.34c-.59-1.68-1.51-3.12-2.66-4.26h0c-1.99-1.99-4.67-3.07-7.47-2.85l-46.37,3.72c-2.52.2-4.81,1.44-6.51,3.37h0c-1.07,1.23-1.9,2.74-2.38,4.44l-38.08,110.63c-2.05,7.22,2.81,14.58,9.63,14.58h133.16c7.11,0,12-7.95,9.41-15.3Z"/>
+            <path class="cls-3" d="M118.55,81.16c-4.82.53-3.22.33-8.45-.4l2.89-12.54s2.22-.51,5.31-1.07c.96-.17,1.99-.35,3.07-.53.4,5.42.61,10.81.61,10.81l-3.44,3.72Z"/>
+            <path class="cls-8" d="M131.64,79.92c-1.79.31-3.79.61-5.94.84h-.03c-2.97-.02-5.88.26-7.14.4-.2.02-.3-.25-.14-.4l3.59-3.33s-.21-5.4-.61-10.81c-.09-1.35-.21-2.7-.32-3.96-.37-3.81-.83-6.88-1.38-6.97.67-.69,2.17-1.86,4.58-1.86,1.52,0,2.47.78,3.05,1.65.63.91.87,2.06.8,3.21-.04.66-.06,1.68-.02,3.15.03,1.05.1,2.34.22,3.89,1.74-.14,3.37-.19,4.72-.1.08,0,.16,0,.24.02"/>
+            <path class="cls-8" d="M136.52,66.89c.04.07.07.15.09.23"/>
+            <path class="cls-9" d="M155.12,83.89c-1.99-1.98-4.67-3.06-7.47-2.84l-46.37,3.72c-2.52.2-4.81,1.44-6.51,3.37l10.23-20.34c1.1-2.18,3.09-3.64,5.33-3.9l7.82-.9c-.04,2.23.15,3.99.17,4.15-3.09.57-5.31,1.07-5.31,1.07l-2.89,12.54c5.23.72,10.75.53,15.58,0h.03c2.18.02,4.38-.19,5.94-.84,4.69-.81,7.82-1.71,7.82-1.71,0,0-.08-.31-.21-.83-.03-.09-.04-.18-.07-.28,0-.02-.02-.04-.02-.06-.07-.28-.15-.6-.24-.93t0-.02c-.37-1.39-.84-3.25-1.29-4.95-.12-.47-.23-.92-.35-1.35-.04-.15-.07-.29-.11-.42-.05-.22-.11-.43-.16-.63-.02-.06-.03-.11-.04-.16-.06-.25-.13-.48-.18-.68-.07-.27-.13-.54-.2-.78-.02-.08-.05-.16-.09-.23-.04-.08-.08-.15-.13-.2-.46-.57-1.47-.88-2.85-1.01-.08,0-.17-.02-.25-.02-.08,0-.16-.02-.24-.02-1.93-.14-4.03.03-4.58.09-.04,0-.1,0-.14,0-.13-1.55-.2-2.84-.22-3.89l11.25-1.3c2.84-.33,5.57,1.32,6.88,4.14l8.89,19.2Z"/>
+            <path class="cls-4" d="M200.41,196.44l-44.43-102.21c-1.62-4.57-5.72-7.46-10.13-7.1l-41.81,3.34c-4.14.34-7.67,3.44-8.91,7.83l-34.76,98.86c-2.04,7.22,2.81,14.57,9.63,14.57l23.17-.09s-.05.06-.07.09h97.91c7.11,0,11.99-7.94,9.4-15.29Z"/>
+          </g>
+        </g>
+        <!-- CABEZA SONIDO -->
+        <g id="cabeza-sonido" class="part-sound">
+          <g transform="translate(-307, -30) scale(1.12)">
+            <path class="cls-2" d="M454.62,41.68s-.35-9.91,1.09-11.1,4.21-3.1,7.77-1.74,2.09,7.5,2.09,7.5c0,0,.51,8.65,1.17,11.24s1.81,6.18,4.15,6.26-16.01,1.96-16.01,1.96l3.85-3.75-.68-10.9-3.44.53"/>
+            <path class="cls-8" d="M458.06,41.15c-1.21.18-2.37.36-3.44.53-.02-.16-.24-1.93-.19-4.18.04-2.19.33-4.83,1.26-6.89,0,0,.01-.01.02-.03.05-.06.19-.22.43-.44h.01c.62.09,1.14,3.18,1.55,7.02.13,1.27.26,2.63.36,3.99Z"/>
+            <path class="cls-3" d="M478.31,52.83l-6.24.65s-2.87,1.97-4.66-3.3c-.36-1.09-.69-2.47-.93-4.24-.3-2.2-.51-4.08-.65-5.68.05,0,.11-.01.16-.01.62-.06,2.97-.23,5.13-.09.09,0,.18.01.27.02.1,0,.19,0,.28.02,1.4.14,2.65.44,3.19,1.02.06.06.11.13.15.2.04.07.08.15.1.23.07.25.14.52.22.79.06.22.13.45.2.69.01.05.02.1.04.16.06.21.12.41.18.63.04.13.08.27.12.42.12.45.25.9.39,1.36.5,1.71,1.03,3.59,1.44,4.99t0,.02c.1.34.19.66.27.94,0,.02.01.04.02.06.03.1.05.19.08.28.15.53.24.84.24.84Z"/>
+            <g>
+              <path class="cls-12" d="M546.55,196.26l-49.76-127.29c-1.81-4.61-6.4-7.52-11.34-7.16l-46.81,3.37c-4.63.34-8.59,3.47-9.98,7.89l-38.9,123.92c-2.28,7.28,3.15,14.68,10.78,14.68h48.61c-4.09-2.85-6.57-7.27-6.7-12.18-16.75-5.98-27.99-18.78-26.94-32.71,1.37-18.02,22.82-31.1,47.93-29.2,25.11,1.89,44.36,18.04,43,36.07-.88,11.73-10.27,21.36-23.65,26.13.07,5.82-2.55,9.57-6.51,11.89h59.75c7.96,0,13.42-8,10.52-15.41Z"/>
+              <path class="cls-10" d="M546.55,196.26l-49.76-127.29c-1.81-4.61-6.4-7.52-11.34-7.16l-46.81,3.37c-4.63.34-8.59,3.47-9.98,7.89l-38.9,123.92c-2.28,7.28,3.15,14.68,10.78,14.68h48.61c-4.09-2.85-6.57-7.27-6.7-12.18-16.75-5.98-27.99-18.78-26.94-32.71,1.37-18.02,22.82-31.1,47.93-29.2,25.11,1.89,44.36,18.04,43,36.07-.88,11.73-10.27,21.36-23.65,26.13.07,5.82-2.55,9.57-6.51,11.89h59.75c7.96,0,13.42-8,10.52-15.41Z"/>
+            </g>
+            <path class="cls-3" d="M454.89,55.8c-5.4.53-3.6.33-9.46-.4l3.24-12.64s2.49-.51,5.95-1.08c1.07-.17,2.23-.35,3.44-.53.45,5.46.68,10.9.68,10.9l-3.85,3.75Z"/>
+            <path class="cls-8" d="M469.55,54.55c-2,.31-4.24.61-6.65.85h-.03c-3.32-.02-6.58.26-7.99.4-.22.02-.33-.26-.16-.4l4.02-3.35s-.23-5.44-.68-10.9c-.1-1.36-.23-2.72-.36-3.99-.41-3.84-.93-6.93-1.55-7.02.75-.7,2.43-1.87,5.13-1.87,1.7,0,2.76.79,3.42,1.66.7.92.97,2.08.9,3.24-.04.67-.07,1.69-.02,3.17.03,1.06.11,2.36.25,3.92,1.95-.14,3.78-.19,5.29-.1.09,0,.18.01.27.02"/>
+            <path class="cls-9" d="M495.83,58.55c-2.23-2-5.23-3.08-8.36-2.86l-51.92,3.75c-2.82.2-5.39,1.45-7.29,3.4l11.45-20.5c1.23-2.2,3.46-3.67,5.97-3.93l8.75-.91c-.05,2.25.17,4.02.19,4.18-3.46.57-5.95,1.08-5.95,1.08l-3.24,12.64c5.86.73,12.04.53,17.44,0h.03c2.44.02,4.9-.19,6.65-.85,5.25-.82,8.76-1.72,8.76-1.72,0,0-.09-.31-.24-.84-.03-.09-.05-.18-.08-.28-.01-.02-.02-.04-.02-.06-.08-.28-.17-.6-.27-.94t0-.02c-.41-1.4-.94-3.28-1.44-4.99-.13-.47-.26-.93-.39-1.36-.04-.15-.08-.29-.12-.42-.06-.22-.12-.43-.18-.63-.02-.06-.03-.11-.04-.16-.07-.25-.14-.48-.2-.69-.08-.27-.15-.54-.22-.79-.02-.08-.06-.16-.1-.23-.04-.08-.09-.15-.15-.2-.51-.57-1.65-.89-3.19-1.02-.09-.01-.19-.02-.28-.02-.09-.01-.18-.02-.27-.02-2.16-.14-4.51.03-5.13.09-.05,0-.11.01-.16.01-.14-1.56-.22-2.86-.25-3.92l12.6-1.31c3.18-.33,6.24,1.33,7.7,4.17l9.95,19.35Z"/>
+          </g>
+        </g>
+        <!-- OJO SILENCIO -->
+        <g id="ojo-silencio" class="part-silence">
+          <path class="cls-5" d="M148.71,132.13c0,10.14-9.74,15.37-22.23,15.37-11.65,0-21.63-4.15-22.87-13.34l6.87-1.28c.48,6.21,6.83,11.12,14.6,11.12s14.63-5.31,14.63-11.88c0-1.58-.38-3.09-1.08-4.47l8.8-1.63c.84,1.91,1.29,3.97,1.29,6.1Z"/>
+          <path class="cls-6" d="M152.79,132.13c0,11.85-11.72,15.37-26.31,15.37-13.46,0-24.67-2.09-26.31-12.65l3.72-.69c1.24,9.19,10.94,10.25,22.59,10.25,12.5,0,22.52-2.14,22.52-12.28,0-2.14-.45-4.2-1.29-6.1l3.72-.7c.88,2.14,1.36,4.42,1.36,6.8Z"/>
+          <path class="cls-2" d="M156.97,124.24l-5.82,1.08-3.72.69-8.8,1.64-4.07.75-20,3.72-4.08.75-6.87,1.27-3.72.69-.21.04s-2.58,1.42-4.55,0c-1.97-1.42,4.55-2.76,4.55-2.76,0-11.85,11.9-14.94,26.49-14.94,10.43,0,19.37-1.61,23.67,5.51l4.08-.6s3.5-1.06,4.15,0c.66,1.07-1.09,2.13-1.09,2.13Z"/>
+          <path class="cls-9" d="M135.6,132.13c0,4.72-4.72,8.54-10.52,8.54s-10.52-3.82-10.52-8.54l20-3.72c.67,1.12,1.04,2.39,1.04,3.72Z"/>
+          <path class="cls-7" d="M139.71,132.13c0,6.56-6.56,11.88-14.63,11.88s-14.12-4.91-14.6-11.12l4.08-.75c0,4.72,4.71,8.54,10.52,8.54s10.52-3.82,10.52-8.54c0-1.33-.38-2.6-1.04-3.72l4.07-.75c.7,1.38,1.08,2.89,1.08,4.47Z"/>
+        </g>
+        <!-- OJO SONIDO -->
+        <g id="ojo-sonido" class="part-sound">
+          <g transform="translate(-320, -26)">
+            <path class="cls-5" d="M485.19,96.91c0,13.99-11.34,25.33-25.33,25.33-13.04,0-23.78-9.86-25.17-22.53l7.69-1.76c.54,8.57,7.65,15.34,16.35,15.34s16.38-7.33,16.38-16.38c0-2.18-.43-4.26-1.21-6.17l9.85-2.25c.94,2.63,1.44,5.47,1.44,8.42Z"/>
+            <path class="cls-6" d="M489.76,96.91c0,16.34-13.24,29.58-29.58,29.58-15.07,0-27.5-11.26-29.34-25.83l4.17-.95c1.39,12.67,12.13,22.53,25.17,22.53,13.99,0,25.33-11.34,25.33-25.33,0-2.95-.5-5.79-1.44-8.42l4.17-.96c.99,2.95,1.52,6.1,1.52,9.38Z"/>
+            <path class="cls-2" d="M494.44,86.04l-6.52,1.49-4.17.96-9.85,2.25-4.56,1.04-22.39,5.13-4.57,1.04-7.69,1.76-4.17.95-.24.06s-2.89,1.96-5.09,0c-2.21-1.96,5.09-3.81,5.09-3.81,0-16.34,13.24-29.58,29.58-29.58,11.68,0,21.77,6.76,26.58,16.59l4.57-.82s3.92-1.47,4.65,0c.74,1.47-1.22,2.94-1.22,2.94Z"/>
+            <path class="cls-9" d="M470.51,96.91c0,6.51-5.28,11.78-11.78,11.78s-11.78-5.27-11.78-11.78l22.39-5.13c.75,1.55,1.17,3.29,1.17,5.13Z"/>
+          </g>
+          <path class="cls-7" d="M475.11,96.91c0,9.05-7.34,16.38-16.38,16.38s-15.81-6.77-16.35-15.34l4.57-1.04c0,6.51,5.27,11.78,11.78,11.78s11.78-5.27,11.78-11.78c0-1.84-.42-3.58-1.17-5.13l4.56-1.04c.78,1.91,1.21,3.99,1.21,6.17Z"/>
+        </g>
+      </g>
+    </svg>
+    <p id="mic-status">Haz clic para activar el micrófono</p>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
+```
+
+Note: Sonido parts are wrapped in `<g transform="translate(...)">` to overlay them at the same position as silence parts.
+
+- [ ] **Step 2: Verify HTML loads**
+
+Run: Open `/Users/dunablazquezmerchan/Documents/AbadirWorkshop/testa/index.html` in a browser.
+Expected: Page loads. SVG visible (both states overlapping — may look messy before CSS).
+
+### Task 2: CSS — positioning, overlays, transitions
+
+**Files:**
+- Create: `testa/style.css`
+
+- [ ] **Step 1: Write style.css**
+
+```css
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a1a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#container {
+  width: 90vmin;
+  max-width: 800px;
+  position: relative;
+}
+
+#character {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Both states overlay at same position */
+.part-silence,
+.part-sound {
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out, clip-path 0.15s ease-out;
+}
+
+/* Silence visible by default, sound hidden */
+.part-sound {
+  opacity: 0;
+}
+
+/* Audio-reactive: JS will toggle these */
+.mode-sound .part-silence {
+  opacity: 0;
+}
+.mode-sound .part-sound {
+  opacity: 1;
+}
+
+/* Arms: rotation pivot at shoulder */
+#brazo-izq-silencio {
+  transform-origin: 270px 163px;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+#brazo-izq-sonido {
+  transform-origin: 263px 31px;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+#brazo-der-silencio {
+  transform-origin: 45px 175px;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+#brazo-der-sonido {
+  transform-origin: 40px 36px;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+/* Mouth: scaleY for opening */
+#boca-sonido {
+  transform: scaleY(0.3);
+  transform-origin: center center;
+}
+#boca-sonido.shake {
+  animation: shake 0.08s infinite;
+}
+
+@keyframes shake {
+  0% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+  100% { transform: rotate(-1deg); }
+}
+
+/* Eye: scaleY for opening */
+#ojo-sonido {
+  transform: scaleY(0.2);
+  transform-origin: center center;
+}
+
+/* Mic status */
+#mic-status {
+  color: #888;
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+#mic-status.active {
+  color: #95c11f;
+}
+#mic-status.error {
+  color: #e6007e;
+}
+```
+
+- [ ] **Step 2: Verify CSS loads**
+
+Open `index.html`. Expected: Character centered on dark background, only silence state visible.
+
+### Task 3: JavaScript — Audio capture and animation loop
+
+**Files:**
+- Create: `testa/script.js`
+
+- [ ] **Step 1: Write script.js**
+
+```javascript
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let analyser, dataArray, source;
+let isListening = false;
+let smoothLevel = 0;
+const SMOOTHING = 0.3;
+
+const micStatus = document.getElementById('mic-status');
+const svg = document.getElementById('character');
+
+const bocaSonido = document.getElementById('boca-sonido');
+const ojoSonido = document.getElementById('ojo-sonido');
+const brazoIzqSile = document.getElementById('brazo-izq-silencio');
+const brazoIzqSoni = document.getElementById('brazo-izq-sonido');
+const brazoDerSile = document.getElementById('brazo-der-silencio');
+const brazoDerSoni = document.getElementById('brazo-der-sonido');
+
+async function startAudio() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    isListening = true;
+    micStatus.textContent = 'Micrófono activo';
+    micStatus.className = 'active';
+    animate();
+  } catch (err) {
+    micStatus.textContent = 'Error: no se pudo acceder al micrófono';
+    micStatus.className = 'error';
+    console.error(err);
+  }
+}
+
+function getRMS() {
+  analyser.getByteTimeDomainData(dataArray);
+  let sum = 0;
+  for (let i = 0; i < dataArray.length; i++) {
+    const val = (dataArray[i] - 128) / 128;
+    sum += val * val;
+  }
+  return Math.sqrt(sum / dataArray.length);
+}
+
+function animate() {
+  if (!isListening) return;
+  requestAnimationFrame(animate);
+
+  const rawLevel = getRMS();
+  smoothLevel += (rawLevel - smoothLevel) * SMOOTHING;
+  const level = Math.min(smoothLevel * 2.5, 1);
+
+  updateHead(level);
+  updateMouth(level);
+  updateEye(level);
+  updateArms(level);
+}
+
+function updateHead(level) {
+  if (level < 0.2) {
+    svg.classList.remove('mode-sound');
+  } else if (level > 0.5) {
+    svg.classList.add('mode-sound');
+  } else {
+    const t = (level - 0.2) / 0.3;
+    if (t > 0.5) svg.classList.add('mode-sound');
+    else svg.classList.remove('mode-sound');
+  }
+}
+
+function updateMouth(level) {
+  if (level < 0.2) {
+    bocaSonido.style.opacity = '0';
+    bocaSonido.style.transform = `scaleY(${0.3})`;
+    bocaSonido.classList.remove('shake');
+  } else if (level < 0.5) {
+    const t = (level - 0.2) / 0.3;
+    bocaSonido.style.opacity = String(t);
+    bocaSonido.style.transform = `scaleY(${0.3 + t * 0.7})`;
+    bocaSonido.classList.remove('shake');
+  } else {
+    const shakeIntensity = Math.min((level - 0.5) * 2, 1);
+    bocaSonido.style.opacity = '1';
+    bocaSonido.style.transform = `scaleY(1)`;
+    if (shakeIntensity > 0.3) {
+      bocaSonido.classList.add('shake');
+    } else {
+      bocaSonido.classList.remove('shake');
+    }
+  }
+}
+
+function updateEye(level) {
+  if (level < 0.2) {
+    ojoSonido.style.opacity = '0';
+    ojoSonido.style.transform = 'scaleY(0.2)';
+  } else if (level < 0.6) {
+    const t = (level - 0.2) / 0.4;
+    ojoSonido.style.opacity = String(t);
+    ojoSonido.style.transform = `scaleY(${0.2 + t * 0.8})`;
+  } else {
+    const extra = Math.min((level - 0.6) / 0.4, 1);
+    ojoSonido.style.opacity = '1';
+    ojoSonido.style.transform = `scaleY(${1 + extra * 0.3})`;
+  }
+}
+
+function updateArms(level) {
+  if (level < 0.2) {
+    brazoIzqSile.style.opacity = '1';
+    brazoIzqSoni.style.opacity = '0';
+    brazoIzqSoni.style.transform = 'rotate(0deg)';
+    brazoDerSile.style.opacity = '1';
+    brazoDerSoni.style.opacity = '0';
+    brazoDerSoni.style.transform = 'rotate(0deg)';
+  } else if (level < 0.7) {
+    const t = (level - 0.2) / 0.5;
+    const angle = t * 45;
+    brazoIzqSile.style.opacity = String(1 - t);
+    brazoIzqSoni.style.opacity = String(t);
+    brazoIzqSoni.style.transform = `rotate(${angle}deg)`;
+    brazoDerSile.style.opacity = String(1 - t);
+    brazoDerSoni.style.opacity = String(t);
+    brazoDerSoni.style.transform = `rotate(${angle}deg)`;
+  } else {
+    brazoIzqSile.style.opacity = '0';
+    brazoIzqSoni.style.opacity = '1';
+    brazoDerSile.style.opacity = '0';
+    brazoDerSoni.style.opacity = '1';
+  }
+}
+
+micStatus.addEventListener('click', () => {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  startAudio();
+});
+```
+
+- [ ] **Step 2: Test audio activation**
+
+Open `index.html` with a local server (e.g., `python3 -m http.server 8080` in testa/ directory). Click "Haz clic para activar el micrófono". Expected: Browser asks for mic permission. After granting, status changes to "Micrófono activo".
+
+### Task 4: Polish — arm rotation refinement, smooth transitions
+
+**Files:**
+- Modify: `testa/style.css`
+- Modify: `testa/script.js`
+
+- [ ] **Step 1: Fine-tune arm transform-origin values**
+
+The shoulder coordinates need to be verified against the SVG. Left arm shoulder is approximately at the connection point between the arm shape and the head. Right arm similarly.
+
+Open SVG in browser, inspect elements to determine exact shoulder pivot points. Update `transform-origin` values in CSS if needed.
+
+- [ ] **Step 2: Add clip-path transition for head**
+
+If pure opacity crossfade for the head isn't smooth enough, add a clip-path reveal:
+
+```css
+.mode-sound #cabeza-silencio {
+  clip-path: inset(0 0 100% 0);
+}
+#cabeza-silencio {
+  clip-path: inset(0);
+  transition: clip-path 0.3s ease-out, opacity 0.3s ease-out;
+}
+```
+
+- [ ] **Step 3: Test full flow end-to-end**
+
+Open `index.html` via local server. Make sound (clap, speak, play music). Expected: Character transitions smoothly from silence to sound state, mouth opens and shakes, eye opens wider, arms rotate. All animations are fluid and responsive.
+
+### Task 5: Error handling and final touches
+
+**Files:**
+- Modify: `testa/index.html`
+- Modify: `testa/style.css`
+- Modify: `testa/script.js`
+
+- [ ] **Step 1: Add loading state and graceful fallback**
+
+In `index.html`, add a fallback message inside the container for browsers without Web Audio API support.
+
+- [ ] **Step 2: Add CSS transitions for smooth audio response**
+
+Ensure all animated properties use `transition` for smoothness. The JS-driven values override transitions on every frame — but having transitions as a safety net ensures smoothness even if frame rate drops.
+
+- [ ] **Step 3: Final test**
+
+Serve via local server, test with various audio levels. Verify behavior: silence → quiet → loud → silence.

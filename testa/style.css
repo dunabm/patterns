@@ -1,0 +1,40 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a1a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#container {
+  width: 90vmin;
+  max-width: 800px;
+  position: relative;
+}
+
+#character {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+#mic-status {
+  color: #888;
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+#mic-status.active {
+  color: #95c11f;
+}
+#mic-status.error {
+  color: #e6007e;
+}
