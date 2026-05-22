@@ -49,12 +49,31 @@ main {
 /* ── Header ── */
 
 .header {
-  background: #ff00f3;
+  background: #0013ff;
   padding: 12px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 3px solid #000;
+  overflow: hidden;
+}
+
+.header-title-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+  flex: 1;
+  position: relative;
+}
+
+.header-title-inner {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee-ltr 20s linear infinite;
+}
+
+@keyframes marquee-ltr {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
 }
 
 .header-title {
@@ -63,6 +82,7 @@ main {
   color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  display: inline;
 }
 
 .header-nav {
@@ -130,7 +150,7 @@ main {
 .hero-subtitle {
   font-family: 'Boldonse Regular', sans-serif;
   font-size: 48px;
-  color: #ffffff;
+  color: #000000;
   text-transform: lowercase;
   position: relative;
   z-index: 1;
@@ -165,7 +185,7 @@ main {
 /* ── Grid ── */
 
 .grid-section {
-  background: #0013ff;
+  background: #ff00f3;
   padding: 32px;
 }
 
@@ -280,7 +300,7 @@ main {
 /* ── Footer ── */
 
 .footer {
-  background: #ff00f3;
+  background: #c2ff06;
   padding: 16px 32px;
   border-top: 3px solid #000;
   text-align: center;
@@ -290,7 +310,7 @@ main {
   font-family: 'Helvetica Light', Helvetica, Arial, sans-serif;
   font-size: 12px;
   font-style: italic;
-  color: #ffffff;
+  color: #000000;
 }
 
 /* ── Responsive ── */
@@ -299,7 +319,7 @@ main {
   .header { padding: 10px 16px; }
   .header-title { font-size: 28px; }
   .header-nav { display: none; }
-  .header-nav.open { display: flex; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: #ff00f3; padding: 16px; border-bottom: 3px solid #000; z-index: 100; }
+  .header-nav.open { display: flex; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: #0013ff; padding: 16px; border-bottom: 3px solid #000; z-index: 100; }
   .hamburger { display: block; }
   .hero { padding: 60px 16px; min-height: 40vh; }
   .hero-subtitle { font-size: 28px; }

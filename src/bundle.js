@@ -86,6 +86,8 @@ function initHeroPatterns() {
   let mouse = { x: 0, y: 0 };
   let w = 1, h = 1;
   const particles = [];
+  let svgHovered = false;
+  let particlePointerTimeout = null;
 
   const connLine = document.createElementNS(ns, 'path');
   connLine.setAttribute('fill', 'none');
@@ -103,12 +105,12 @@ function initHeroPatterns() {
   resize();
   window.addEventListener('resize', resize);
 
-  const rows = 8;
-  const cols = 15;
-  const spacingX = Math.max(w / cols, 50);
-  const spacingY = Math.max(h / rows, 50);
-  const padX = spacingX * 0.1;
-  const padY = spacingY * 0.1;
+  const rows = 14;
+  const cols = 28;
+  const spacingX = Math.max(w / cols, 40);
+  const spacingY = Math.max(h / rows, 40);
+  const padX = spacingX * 0.15;
+  const padY = spacingY * 0.15;
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -117,6 +119,7 @@ function initHeroPatterns() {
       poly.setAttribute('points', def.points);
       poly.setAttribute('fill', def.fill);
       poly.style.transformOrigin = 'center';
+      poly.style.transition = 'opacity 0.15s';
       svg.appendChild(poly);
 
       particles.push({
@@ -125,12 +128,34 @@ function initHeroPatterns() {
         baseY: -padY + r * spacingY + Math.random() * padY * 2,
         px: 0, py: 0,
         phase: Math.random() * Math.PI * 2,
-        speed: 0.2 + Math.random() * 0.4,
-        amp: 4 + Math.random() * 10,
-        size: 0.8 + Math.random() * 0.8,
+        speed: 0.3 + Math.random() * 0.5,
+        amp: 5 + Math.random() * 12,
+        size: 0.6 + Math.random() * 1.0,
+        hovered: false,
       });
     }
   }
+
+  svg.style.pointerEvents = 'auto';
+  svg.addEventListener('mouseenter', () => { svgHovered = true; });
+  svg.addEventListener('mouseleave', () => { svgHovered = false; });
+
+  particlePointerTimeout = null;
+  svg.addEventListener('mousemove', (e) => {
+    clearTimeout(particlePointerTimeout);
+    const rect = svg.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    particles.forEach(p => {
+      const dx = mx - p.baseX;
+      const dy = my - p.baseY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      p.hovered = dist < 60;
+    });
+    particlePointerTimeout = setTimeout(() => {
+      particles.forEach(p => p.hovered = false);
+    }, 300);
+  });
 
   document.addEventListener('mousemove', (e) => {
     const rect = svg.getBoundingClientRect();
@@ -147,22 +172,25 @@ function initHeroPatterns() {
       const dy = mouse.y - p.baseY;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      const repel = Math.max(0, 1 - dist / 250);
-      const repelX = dist > 1 ? -(dx / dist) * repel * 60 : 0;
-      const repelY = dist > 1 ? -(dy / dist) * repel * 60 : 0;
+      const distMult = svgHovered ? 1.6 : 1.0;
+      const repel = Math.max(0, 1 - dist / (250 * distMult));
+      const repelX = dist > 1 ? -(dx / dist) * repel * 80 : 0;
+      const repelY = dist > 1 ? -(dy / dist) * repel * 80 : 0;
 
-      const driftX = Math.sin(now * p.speed + p.phase) * p.amp;
-      const driftY = Math.cos(now * p.speed * 0.7 + p.phase * 1.3) * p.amp;
+      const hoverBoost = p.hovered ? 1.5 : 0;
+      const driftX = Math.sin(now * p.speed + p.phase) * (p.amp + hoverBoost * 12);
+      const driftY = Math.cos(now * p.speed * 0.7 + p.phase * 1.3) * (p.amp + hoverBoost * 12);
 
       const tx = driftX + repelX;
       const ty = driftY + repelY;
-      const s = p.size * (1 + repel * 0.6);
+      const s = p.size * (1 + repel * 0.8) * (p.hovered ? 1.5 : 1);
 
       p.px = p.baseX + tx;
       p.py = p.baseY + ty;
 
       p.el.setAttribute('transform', `translate(${tx}, ${ty}) scale(${s})`);
-      p.el.style.opacity = Math.min(1, 0.3 + repel * 0.7 + 0.15);
+      const baseOpacity = p.hovered ? 0.6 : 0.25;
+      p.el.style.opacity = Math.min(1, baseOpacity + repel * 0.8);
     });
 
     let lines = '';
@@ -172,9 +200,12 @@ function initHeroPatterns() {
         const dx = a.px - b.px;
         const dy = a.py - b.py;
         const d = Math.sqrt(dx * dx + dy * dy);
-        if (d < connectMax) {
-          const alpha = 1 - d / connectMax;
-          lines += `<line x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="white" stroke-width="${alpha * 1.2}" opacity="${alpha * 0.2}" />`;
+        const cMax = svgHovered ? 250 : connectMax;
+        if (d < cMax) {
+          const alpha = 1 - d / cMax;
+          const lineW = alpha * (svgHovered ? 2.0 : 1.0);
+          const lineO = alpha * (svgHovered ? 0.5 : 0.15);
+          lines += `<line x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="white" stroke-width="${lineW}" opacity="${lineO}" />`;
         }
       }
     }
