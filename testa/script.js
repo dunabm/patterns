@@ -2,8 +2,8 @@ let audioCtx;
 let analyser, dataArray, source;
 let isListening = false;
 let smoothLevel = 0;
-const SMOOTHING = 0.2;
-const THRESHOLD = 0.05;
+const SMOOTHING = 0.1;
+const THRESHOLD = 0.01;
 
 const micStatus = document.getElementById('mic-status');
 
@@ -110,11 +110,12 @@ async function startAudio() {
 
 function getAudioLevel() {
   analyser.getByteFrequencyData(dataArray);
-  let sum = 0;
-  for (let i = 0; i < dataArray.length; i++) {
-    sum += dataArray[i];
+  let sumSq = 0;
+  const len = dataArray.length;
+  for (let i = 0; i < len; i++) {
+    sumSq += dataArray[i] * dataArray[i];
   }
-  return sum / dataArray.length / 256;
+  return Math.sqrt(sumSq / len) / 256;
 }
 
 function animate() {
@@ -125,7 +126,7 @@ function animate() {
   if (level < THRESHOLD) level = 0;
 
   smoothLevel += (level - smoothLevel) * SMOOTHING;
-  const t = Math.min(smoothLevel * 4, 1);
+  const t = Math.min(smoothLevel * 5, 1);
 
   morphPairs.forEach(p => {
     p.el.setAttribute('d', p.interpolator(t));
