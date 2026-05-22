@@ -284,15 +284,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 document.querySelector('.hamburger').addEventListener('click', () => {
   document.querySelector('.header-nav').classList.toggle('open');
 });
-// ── Search filter ──
-document.querySelector('.search-input').addEventListener('input', (e) => {
-  const term = e.target.value.toLowerCase();
-  document.querySelectorAll('.card').forEach(card => {
-    const title = card.querySelector('.card-title').textContent.toLowerCase();
-    const desc = card.querySelector('.card-desc').textContent.toLowerCase();
-    card.style.display = title.includes(term) || desc.includes(term) ? '' : 'none';
-  });
-});
+
 // ── Custom cursor ──
 const cursor = document.getElementById('custom-cursor');
 document.addEventListener('mousemove', (e) => {

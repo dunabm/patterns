@@ -160,28 +160,6 @@ main {
   text-transform: uppercase;
 }
 
-.hero-search {
-  margin-top: 24px;
-  position: relative;
-  z-index: 1;
-}
-
-.search-input {
-  font-family: 'Helvetica Light', Helvetica, Arial, sans-serif;
-  font-size: 14px;
-  padding: 12px 20px;
-  border: 2px solid #000;
-  background: #fff;
-  width: 100%;
-  max-width: 400px;
-  outline: none;
-}
-
-.search-input:focus {
-  background: #c2ff06;
-  color: #000;
-}
-
 /* ── Grid ── */
 
 .grid-section {
