@@ -105,12 +105,12 @@ function initHeroPatterns() {
   resize();
   window.addEventListener('resize', resize);
 
-  const rows = 14;
-  const cols = 28;
-  const spacingX = Math.max(w / cols, 40);
-  const spacingY = Math.max(h / rows, 40);
-  const padX = spacingX * 0.15;
-  const padY = spacingY * 0.15;
+  const rows = 12;
+  const cols = 20;
+  const spacingX = Math.max(w / cols, 50);
+  const spacingY = Math.max(h / rows, 50);
+  const padX = spacingX * 0.25;
+  const padY = spacingY * 0.25;
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -128,9 +128,9 @@ function initHeroPatterns() {
         baseY: -padY + r * spacingY + Math.random() * padY * 2,
         px: 0, py: 0,
         phase: Math.random() * Math.PI * 2,
-        speed: 0.3 + Math.random() * 0.5,
-        amp: 5 + Math.random() * 12,
-        size: 0.6 + Math.random() * 1.0,
+        speed: 0.2 + Math.random() * 0.4,
+        amp: 8 + Math.random() * 18,
+        size: 1.2 + Math.random() * 1.8,
         hovered: false,
       });
     }
@@ -150,7 +150,7 @@ function initHeroPatterns() {
       const dx = mx - p.baseX;
       const dy = my - p.baseY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      p.hovered = dist < 60;
+      p.hovered = dist < 80;
     });
     particlePointerTimeout = setTimeout(() => {
       particles.forEach(p => p.hovered = false);
@@ -165,31 +165,31 @@ function initHeroPatterns() {
 
   function tick() {
     const now = Date.now() / 1000;
-    const connectMax = 200;
+    const connectMax = 250;
 
     particles.forEach(p => {
       const dx = mouse.x - p.baseX;
       const dy = mouse.y - p.baseY;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      const distMult = svgHovered ? 1.6 : 1.0;
-      const repel = Math.max(0, 1 - dist / (250 * distMult));
-      const repelX = dist > 1 ? -(dx / dist) * repel * 80 : 0;
-      const repelY = dist > 1 ? -(dy / dist) * repel * 80 : 0;
+      const distMult = svgHovered ? 2.0 : 1.0;
+      const repel = Math.max(0, 1 - dist / (300 * distMult));
+      const repelX = dist > 1 ? -(dx / dist) * repel * 100 : 0;
+      const repelY = dist > 1 ? -(dy / dist) * repel * 100 : 0;
 
-      const hoverBoost = p.hovered ? 1.5 : 0;
-      const driftX = Math.sin(now * p.speed + p.phase) * (p.amp + hoverBoost * 12);
-      const driftY = Math.cos(now * p.speed * 0.7 + p.phase * 1.3) * (p.amp + hoverBoost * 12);
+      const hoverBoost = p.hovered ? 1.8 : 0;
+      const driftX = Math.sin(now * p.speed + p.phase) * (p.amp + hoverBoost * 16);
+      const driftY = Math.cos(now * p.speed * 0.7 + p.phase * 1.3) * (p.amp + hoverBoost * 16);
 
       const tx = driftX + repelX;
       const ty = driftY + repelY;
-      const s = p.size * (1 + repel * 0.8) * (p.hovered ? 1.5 : 1);
+      const s = p.size * (1 + repel * 1.0) * (p.hovered ? 1.8 : 1);
 
       p.px = p.baseX + tx;
       p.py = p.baseY + ty;
 
       p.el.setAttribute('transform', `translate(${tx}, ${ty}) scale(${s})`);
-      const baseOpacity = p.hovered ? 0.6 : 0.25;
+      const baseOpacity = p.hovered ? 0.8 : 0.35;
       p.el.style.opacity = Math.min(1, baseOpacity + repel * 0.8);
     });
 
@@ -200,11 +200,11 @@ function initHeroPatterns() {
         const dx = a.px - b.px;
         const dy = a.py - b.py;
         const d = Math.sqrt(dx * dx + dy * dy);
-        const cMax = svgHovered ? 250 : connectMax;
+        const cMax = svgHovered ? 350 : connectMax;
         if (d < cMax) {
           const alpha = 1 - d / cMax;
-          const lineW = alpha * (svgHovered ? 2.0 : 1.0);
-          const lineO = alpha * (svgHovered ? 0.5 : 0.15);
+          const lineW = alpha * (svgHovered ? 2.5 : 1.2);
+          const lineO = alpha * (svgHovered ? 0.6 : 0.2);
           lines += `<line x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="white" stroke-width="${lineW}" opacity="${lineO}" />`;
         }
       }
