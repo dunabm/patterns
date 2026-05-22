@@ -7,43 +7,11 @@ const THRESHOLD = 0.05;
 
 const micStatus = document.getElementById('mic-status');
 
-// Offset each sound body part to overlay its silence counterpart
-const OFFSETS = {
-  'cabeza':     { dx: -336, dy: 26 },
-  'boca':       { dx: -335, dy: 31 },
-  'ojo':        { dx: -335, dy: 46 },
-  'brazo-izq':  { dx: -340, dy: 109 },
-  'brazo-der':  { dx: -330, dy: 57 },
-};
-
-// Morphing pairs: { el, interpolator }
 const morphPairs = [];
-
-function offsetPathData(d, dx, dy) {
-  let result = '';
-  let i = 0;
-  while (i < d.length) {
-    const cmd = d[i];
-    if (!cmd) break;
-    let j = i + 1;
-    while (j < d.length && !/[MLCQTASZmlcqtasz]/.test(d[j])) j++;
-    const params = d.slice(i + 1, j).trim();
-    if (cmd === cmd.toUpperCase() && cmd !== 'Z') {
-      const shifted = params.replace(
-        /([-+]?\d*\.?\d+)\s*[,]\s*([-+]?\d*\.?\d+)/g,
-        (m, x, y) => `${(parseFloat(x) + (dx || 0)).toFixed(4)},${(parseFloat(y) + (dy || 0)).toFixed(4)}`
-      );
-      result += cmd + shifted;
-    } else {
-      result += cmd + params;
-    }
-    i = j;
-  }
-  return result;
-}
+let silenceArmGroup, soundArmClone;
+let mouthGroup;
 
 function matchPathsByClass(fromPaths, toPaths) {
-  // Group paths by class attribute
   const fromByClass = {};
   const toByClass = {};
   fromPaths.forEach(p => {
@@ -69,48 +37,55 @@ function matchPathsByClass(fromPaths, toPaths) {
 }
 
 function setupMorphing() {
+  const silenceSvg = document.getElementById('character-silence');
+  const soundSvg = document.getElementById('character-sound');
+
   const bodyParts = [
-    { from: 'cabeza-silencio',  to: 'cabeza-sonido',    offsetKey: 'cabeza' },
-    { from: 'boca-silencio',    to: 'boca-sonido',      offsetKey: 'boca' },
-    { from: 'ojo-silencio',     to: 'ojo-sonido',       offsetKey: 'ojo' },
-    { from: 'brazo-izq-silencio', to: 'brazo-izq-sonido', offsetKey: 'brazo-izq' },
-    { from: 'brazo-der-silencio', to: 'brazo-der-sonido', offsetKey: 'brazo-der' },
+    { from: 'cabeza_silencio',     to: 'cabeza_sonido' },
+    { from: 'boca_silencio',       to: 'boca_sonido-2' },
+    { from: 'ojo_silencio',        to: 'ojo_sonido' },
   ];
 
   let total = 0;
   let ok = 0;
 
-  bodyParts.forEach(({ from, to, offsetKey }) => {
-    const fromEl = document.getElementById(from);
-    const toEl = document.getElementById(to);
+  bodyParts.forEach(({ from, to }) => {
+    const fromEl = silenceSvg.querySelector(`#${from}`);
+    const toEl = soundSvg.querySelector(`#${to}`);
     if (!fromEl || !toEl) return;
 
     const fromPaths = fromEl.querySelectorAll('path');
     const toPaths = toEl.querySelectorAll('path');
-    const off = OFFSETS[offsetKey] || { dx: 0, dy: 0 };
 
-    // Match paths by class instead of by index
     const pairs = matchPathsByClass(fromPaths, toPaths);
 
     pairs.forEach(({ from: fp, to: tp }) => {
       const d1 = fp.getAttribute('d');
       const d2 = tp.getAttribute('d');
       if (!d1 || !d2) return;
-      const d2shifted = offsetPathData(d2, off.dx, off.dy);
       total++;
       try {
-        const interp = flubber.interpolate(d1, d2shifted, { maxSegmentLength: 5 });
+        const interp = flubber.interpolate(d1, d2, { maxSegmentLength: 5 });
         morphPairs.push({ el: fp, interpolator: interp });
         ok++;
-      } catch (e) {
-        // keep silence path as-is
-      }
+      } catch (e) {}
     });
-
-    toEl.style.display = 'none';
   });
 
   console.log(`flubber: ${ok}/${total} paths morphed`);
+
+  // Arm opacity crossfade: clone sound arms into silence SVG
+  silenceArmGroup = silenceSvg.querySelector('#brazos_silencio');
+  const soundArmG = soundSvg.querySelector('#brazos_sonido');
+  if (soundArmG) {
+    soundArmClone = soundArmG.cloneNode(true);
+    soundArmClone.id = 'brazos-sound-clone';
+    soundArmClone.style.opacity = '0';
+    silenceSvg.querySelector('#brazos').appendChild(soundArmClone);
+  }
+
+  // Mouth group for vibration
+  mouthGroup = silenceSvg.querySelector('#boca_silencio');
 }
 
 async function startAudio() {
@@ -152,10 +127,27 @@ function animate() {
   smoothLevel += (level - smoothLevel) * SMOOTHING;
   const t = Math.min(smoothLevel * 4, 1);
 
-  // Morph paths in place — shapes change but position stays centered
   morphPairs.forEach(p => {
     p.el.setAttribute('d', p.interpolator(t));
   });
+
+  // Arm crossfade: silence fades out first, then sound fades in
+  if (silenceArmGroup && soundArmClone) {
+    const silenceOpacity = Math.max(0, 1 - t * 3);
+    const soundOpacity = Math.max(0, Math.min(1, (t - 0.3) * 2));
+    silenceArmGroup.style.opacity = silenceOpacity.toString();
+    soundArmClone.style.opacity = soundOpacity.toString();
+  }
+
+  // Mouth vibration during sound
+  if (t > 0.05) {
+    const amp = t * 1.5;
+    const vibX = (Math.random() - 0.5) * amp;
+    const vibY = (Math.random() - 0.5) * amp;
+    mouthGroup.setAttribute('transform', `translate(${vibX}, ${vibY})`);
+  } else {
+    mouthGroup.removeAttribute('transform');
+  }
 }
 
 micStatus.addEventListener('click', () => {
