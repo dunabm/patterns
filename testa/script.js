@@ -20,18 +20,15 @@ const OFFSETS = {
 const morphPairs = [];
 
 function offsetPathData(d, dx, dy) {
-  // Split into commands and shift absolute (uppercase) coordinates
   let result = '';
   let i = 0;
   while (i < d.length) {
     const cmd = d[i];
     if (!cmd) break;
-    // Find end of this command's parameters
     let j = i + 1;
     while (j < d.length && !/[MLCQTASZmlcqtasz]/.test(d[j])) j++;
     const params = d.slice(i + 1, j).trim();
     if (cmd === cmd.toUpperCase() && cmd !== 'Z') {
-      // Absolute command — shift all coordinate pairs
       const shifted = params.replace(
         /([-+]?\d*\.?\d+)\s*[,]\s*([-+]?\d*\.?\d+)/g,
         (m, x, y) => `${(parseFloat(x) + (dx || 0)).toFixed(4)},${(parseFloat(y) + (dy || 0)).toFixed(4)}`
@@ -43,6 +40,32 @@ function offsetPathData(d, dx, dy) {
     i = j;
   }
   return result;
+}
+
+function matchPathsByClass(fromPaths, toPaths) {
+  // Group paths by class attribute
+  const fromByClass = {};
+  const toByClass = {};
+  fromPaths.forEach(p => {
+    const cls = p.getAttribute('class') || '';
+    if (!fromByClass[cls]) fromByClass[cls] = [];
+    fromByClass[cls].push(p);
+  });
+  toPaths.forEach(p => {
+    const cls = p.getAttribute('class') || '';
+    if (!toByClass[cls]) toByClass[cls] = [];
+    toByClass[cls].push(p);
+  });
+
+  const pairs = [];
+  Object.keys(fromByClass).forEach(cls => {
+    if (!toByClass[cls]) return;
+    const n = Math.min(fromByClass[cls].length, toByClass[cls].length);
+    for (let i = 0; i < n; i++) {
+      pairs.push({ from: fromByClass[cls][i], to: toByClass[cls][i] });
+    }
+  });
+  return pairs;
 }
 
 function setupMorphing() {
@@ -66,13 +89,13 @@ function setupMorphing() {
     const toPaths = toEl.querySelectorAll('path');
     const off = OFFSETS[offsetKey] || { dx: 0, dy: 0 };
 
-    fromPaths.forEach((fp, i) => {
-      const tp = toPaths[i];
-      if (!tp) return;
+    // Match paths by class instead of by index
+    const pairs = matchPathsByClass(fromPaths, toPaths);
+
+    pairs.forEach(({ from: fp, to: tp }) => {
       const d1 = fp.getAttribute('d');
       const d2 = tp.getAttribute('d');
       if (!d1 || !d2) return;
-      // Shift sound path so it overlays the silence position
       const d2shifted = offsetPathData(d2, off.dx, off.dy);
       total++;
       try {
@@ -80,14 +103,14 @@ function setupMorphing() {
         morphPairs.push({ el: fp, interpolator: interp });
         ok++;
       } catch (e) {
-        // skip — will keep the silence path
+        // keep silence path as-is
       }
     });
 
     toEl.style.display = 'none';
   });
 
-  console.log(`flubber: ${ok}/${total} paths`);
+  console.log(`flubber: ${ok}/${total} paths morphed`);
 }
 
 async function startAudio() {
